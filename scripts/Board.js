@@ -6,8 +6,13 @@ var margin = 7 * resizeFactor;
 var borderWidth = 6 * resizeFactor;
 var hbw = borderWidth / 2;
 
+var triangles = [];
+var triWidth = 18 * resizeFactor;
+var triHeight = 95 * resizeFactor;
+
 function setup() {
   createCanvas(canvasSize + 100, canvasSize);
+  createTriangles();
 }
 
 function draw() {
@@ -23,6 +28,12 @@ function drawBoard() {
 
   // borders
   drawBorders();
+
+  // draw the triangles
+  for (var i = 0; i < 24; i++)
+  {
+    triangles[i].display();
+  }
 
 } // drawBoard
 
@@ -47,3 +58,29 @@ function drawBorders() {
   line(padding + boardLength/2, padding,
        padding + boardLength/2, padding + boardLength);
 } // drawBorders
+
+function createTriangles() {
+  createTriangleSet(padding + boardLength - margin,
+                        padding + boardLength, 0, -1);
+  createTriangleSet(padding + boardLength/2 - hbw - margin,
+                        padding + boardLength, 6, -1);
+  createTriangleSet(padding + margin,
+                        padding, 12, 1);
+  createTriangleSet(padding + margin + boardLength/2 + hbw,
+                        padding, 18, 1);
+}
+
+function createTriangleSet(x, y, index, s) {
+  var halfTriWidth = triWidth / 2;
+  var brown = color(60, 24, 24);
+  var cream = color(234, 199, 134);
+
+  for (var i = 0; i < 6; i++) {
+    // add a new triangle with the computed coordinates and colour at
+    // the correct index and alternate the colour of triangles
+    triangles[i+index] = new BoardTriangle(createVector(x + s*i*triWidth, y),
+                         createVector(x + s*(i+1)*triWidth, y),
+                         createVector(x + s*halfTriWidth + s*i*triWidth, y + s*triHeight),
+                         i%2==0? brown : cream);
+  }
+}
