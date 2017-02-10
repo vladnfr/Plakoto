@@ -5,6 +5,7 @@ var padding = (canvasSize - boardLength) / 2;
 var margin = 7 * resizeFactor;
 var borderWidth = 6 * resizeFactor;
 var hbw = borderWidth / 2;
+var sizeOfText = 4 * resizeFactor;
 
 var triWidth = 18 * resizeFactor;
 var triHeight = 95 * resizeFactor;
@@ -49,6 +50,7 @@ function drawBoard() {
     triangles[i].display();
   }
 
+  writeNumbers();
 } // drawBoard
 
 function drawCheckers() {
@@ -97,6 +99,20 @@ function drawBorders() {
             padding + boardLength + borderWidth + checkerDiameter + hbw,
             padding + hbw + boardLength);
 } // drawBorders
+
+function writeNumbers() {
+  textSize(sizeOfText);
+  strokeWeight(0);
+  fill(234, 199, 134);
+
+  for (var i = 0; i <= 25; i ++)
+  {
+    text(i.toString(),
+         i<9 ? triangles[i].p3.x - sizeOfText/4 : triangles[i].p3.x - sizeOfText/2,
+         i<13? padding+boardLength+hbw*1.5 : padding-hbw*0.5);
+  }
+}
+
 
 function createTriangles() {
   triangles[0] = new BoardTriangle(createVector(padding+boardLength+borderWidth+triWidth, padding+boardLength),
