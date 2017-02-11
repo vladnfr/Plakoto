@@ -7,6 +7,7 @@ var borderWidth = 6 * resizeFactor;
 var hbw = borderWidth / 2;
 var sizeOfText = 4 * resizeFactor;
 
+
 var triWidth = 18 * resizeFactor;
 var triHeight = 95 * resizeFactor;
 var triangles = [];
@@ -15,6 +16,7 @@ var checkerDiameter = 18 * resizeFactor;
 var checkerRadius = checkerDiameter / 2;
 var checkers = [];
 
+var freeSpaceHeight = boardLength - 2 * triHeight;
 var brown, cream, black, white;
 
 
@@ -32,8 +34,56 @@ function setup() {
 function draw() {
   background(0);
   drawBoard();
+
+  if (mouseY > padding && mouseY < padding + triHeight ||
+      (mouseY > padding + triHeight + freeSpaceHeight &&
+        mouseY < canvasSize - padding)) { highlightTriangles(); }
+
+
   drawCheckers();
 }
+
+function getHoveredTriangle() {
+  // optimisation: only compute if mouse is over some triangle
+
+  if (mouseY > padding + triHeight + freeSpaceHeight &&
+      mouseY < canvasSize - padding) {
+
+    for (var i = 0; i <= 12; i++) {
+      if (collidePointRect(mouseX, mouseY,
+        triangles[i].p2.x, triangles[i].p2.y - triHeight,
+        triWidth, triHeight)) { return i; }
+    }
+  }
+  else if (mouseY > padding && mouseY < padding + triHeight) {
+    for (var i = 13; i <= 25; i++) {
+      if (collidePointRect(mouseX, mouseY,
+          triangles[i].p1.x, triangles[i].p1.y,
+          triWidth, triHeight)) { return i; }
+    } // for loop
+  } // else if
+  return -1;
+} // getHoveredTriangle
+
+function highlightTriangles() {
+  var hoveredTri = getHoveredTriangle();
+  if (hoveredTri > 0 && hoveredTri < 25) {
+    highlightTriangle(hoveredTri, color(255,0,0));
+  }
+}
+
+function highlightTriangle(tri, colour) {
+  stroke(colour);
+  strokeWeight(3);
+
+  line(triangles[tri].p3.x, triangles[tri].p3.y,
+       triangles[tri].p2.x, triangles[tri].p2.y);
+
+  line(triangles[tri].p3.x, triangles[tri].p3.y,
+       triangles[tri].p1.x, triangles[tri].p1.y);
+
+}
+
 
 function drawBoard() {
 
