@@ -58,6 +58,16 @@ function drawCheckers() {
     // checkers is an array of objects from the server
     checkers[i].display();
   }
+
+  // draw the number of checkers on each triangle
+  textSize(sizeOfText);
+  for (var i = 0; i <= 25; i++) {
+    var s = i < 13? -1 : 1;
+    var x = triangles[i].p3.x;
+    var y = triangles[i].p1.y + s*checkerRadius;
+    fill(255,0,0);
+    text(triangles[i].checkersStack.length.toString(), x,y);
+  }
 }
 
 function drawBorders() {
