@@ -19,6 +19,9 @@ var checkers = [];
 var freeSpaceHeight = boardLength - 2 * triHeight;
 var brown, cream, black, white;
 
+var hasRolled = false;
+var dice = [0,0];
+
 
 function setup() {
   brown = color(60, 24, 24);
@@ -29,6 +32,12 @@ function setup() {
   createCanvas(canvasSize + 100, canvasSize);
   createTriangles();
   createCheckers();
+
+  rollButton = createButton("Roll the dices!");
+  rollButton.position(padding + borderWidth,
+                      padding + boardLength/2);
+
+  rollButton.mousePressed(roll);
 }
 
 function draw() {
@@ -41,6 +50,22 @@ function draw() {
 
 
   drawCheckers();
+}
+
+function mousePressed() {
+} // mousePressed
+
+function roll() {
+  if (!hasRolled) {
+    hasRolled = true;
+    isDouble = false;
+    dice[0] = ceil(random() * 6);
+    dice[1] = ceil(random() * 6);
+    if (dice[0] == dice[1]) { isDouble = true; }
+
+    totalValue = dice[0] != dice[1] ? dice[0] + dice[1] : dice[0]*4;
+    //updatePossibleMoves();
+  }
 }
 
 function getHoveredTriangle() {
@@ -101,6 +126,7 @@ function drawBoard() {
   }
 
   writeNumbers();
+  displayDiceOutcome();
 } // drawBoard
 
 function drawCheckers() {
@@ -118,6 +144,15 @@ function drawCheckers() {
     fill(255,0,0);
     text(triangles[i].checkersStack.length.toString(), x,y);
   }
+}
+
+function displayDiceOutcome() {
+  textSize(30*resizeFactor);
+  fill(255);
+  noStroke();
+  text(dice[0] + " " + dice[1],
+       padding + borderWidth + boardLength/1.5, padding + boardLength/2 + 10*resizeFactor);
+
 }
 
 function drawBorders() {
