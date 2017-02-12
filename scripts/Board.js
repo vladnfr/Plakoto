@@ -33,7 +33,7 @@ function setup() {
   createTriangles();
   createCheckers();
 
-  rollButton = createButton("Roll the dices!");
+  rollButton = createButton("Roll the dice!");
   rollButton.position(padding + borderWidth,
                       padding + boardLength/2);
 
