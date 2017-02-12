@@ -21,6 +21,12 @@ var brown, cream, black, white;
 
 var hasRolled = false;
 var dice = [0,0];
+var currentPlayer = 0;
+var sign = currentPlayer ? -1 : 1;
+var selectedChecker = 0;
+var isSelected = false;
+var clickedTriangle = 0;
+
 
 
 function setup() {
@@ -53,7 +59,80 @@ function draw() {
 }
 
 function mousePressed() {
+  // optimisation: only if over the triangles
+  if (mouseY > padding && mouseY < padding + triHeight ||
+      (mouseY > padding + triHeight + freeSpaceHeight &&
+        mouseY < canvasSize - padding)) {
+    clickedTriangle = getHoveredTriangle();
+    if (clickedTriangle > -1 && totalValue > 0) {
+      if (!isSelected) {
+        if (currentPlayerCanGrabFrom(clickedTriangle)) {
+          updatePossibleMoves();
+          if (triangles[clickedTriangle].checkersStack.length > 0) {
+            selectedChecker = triangles[clickedTriangle].checkersStack.pop();
+            isSelected = true;
+          } // if
+        }
+      } // if the checker is not selected
+      else {
+        if (checkerCanBeMovedTo(selectedChecker, clickedTriangle)) {
+          var movedValue = clickedTriangle-checkers[selectedChecker-1].position;
+          if (sign*movedValue >= 0) {
+            moveChecker(selectedChecker, clickedTriangle);
+            isSelected = false;
+          } // legal move
+        }
+      } // if the checker is already selected
+    } // if
+  } // if mouse over the triangles
 } // mousePressed
+
+function moveChecker(checker, point) {
+
+  if (point == 25 || point == 0) {
+    if (totalValue == dice[0]) {
+      totalValue = 0;
+    }
+    else if (totalValue == dice[1]) {
+      totalValue = 0;
+    }
+    else {
+      var previousTriangle = checkers[checker-1].position;
+      if (dice[0] == previousTriangle || dice[0] == 25 - previousTriangle ) {
+        totalValue -= dice[0];
+      }
+      else if (dice[1] == previousTriangle || dice[1] == 25 - previousTriangle){
+        totalValue -= dice[1];
+      }
+      else {
+        if (dice[0] > dice[1]) { totalValue -= dice[0]; }
+        else                   { totalValue -= dice[1]; }
+      }
+    }
+  } else {
+    sign = currentPlayer? -1 : 1;
+    totalValue -= sign*(point - checkers[checker-1].position);
+  }
+  triangles[point].checkersStack.push(checker);
+  checkers[checker-1].position = point;
+
+  updatePossibleMoves();
+  updateCheckersCoordinates();
+}
+
+function updateCheckersCoordinates() {
+  var newX, newY, s;
+  for (var i = 0; i <= 25; i++) {
+    s = i < 13? -1 : 1;
+    for (var j = 0; j < triangles[i].checkersStack.length; j++) {
+      newX = triangles[i].p3.x;
+      newY = triangles[i].p1.y + s*(checkerRadius + j%5 * checkerDiameter);
+
+      checkers[triangles[i].checkersStack[j]-1].center.x = newX;
+      checkers[triangles[i].checkersStack[j]-1].center.y = newY;
+    }
+  }
+}
 
 function roll() {
   if (!hasRolled) {
@@ -64,9 +143,198 @@ function roll() {
     if (dice[0] == dice[1]) { isDouble = true; }
 
     totalValue = dice[0] != dice[1] ? dice[0] + dice[1] : dice[0]*4;
-    //updatePossibleMoves();
+    updatePossibleMoves();
   }
 }
+
+function updatePossibleMoves() {
+  var noOfTargets;
+  var target;
+  var isPossibleToMove = false;
+  canBearOff = canCurrentPlayerBearOff();
+
+  // reset all the possible targets
+  for (var i = 0; i <= 25; i++) {
+    if (triangles[i].checkersStack.length) {
+      triangles[i].possibleTargets = [i];
+    }
+  }
+
+  for (var i = 1; i <= 24; i++) {
+    if (currentPlayerCanMoveFrom(i)) {
+    // compute which are the possible targets you can move to
+      if (!isDouble) {
+        noOfTargets = totalValue == dice[0] + dice[1] ? 3 : 1;
+        if (noOfTargets == 1) {
+          if (totalValue == dice[1]) {
+            target = i + sign*dice[1];
+            if (target > 0 && target < 25)  {
+              if (currentPlayerCanMoveTo(target)) {
+                 triangles[i].possibleTargets.push(target);
+                 isPossibleToMove = true;
+              } // valid move
+            } // if it's not the case of bearing off
+            else if (canBearOff) {
+              bearOff();
+              isPossibleToMove = true;
+            } // checker can be bourne off
+          } // if first die already moved
+
+          else {
+            target = i + sign*dice[0];
+            if (target > 0 && target < 25) {
+              if (currentPlayerCanMoveTo(target)) {
+                 triangles[i].possibleTargets.push(target);
+                 isPossibleToMove = true;
+              } // valid move
+            } // if it's not the case of bearing off
+            else if (canBearOff) {
+              bearOff();
+              isPossibleToMove = true;
+            } // checker can be bourne off
+          } // if second die already moved
+        } // if just one move left
+
+        // in the case that no dice was already moved
+        else {
+          target = i + sign*dice[0];
+          if (target > 0 && target < 25) {
+            if (currentPlayerCanMoveTo(target)) {
+              triangles[i].possibleTargets.push(target);
+              isPossibleToMove = true;
+            } // valid move
+          } // if it's not the case of bearing off
+          else if (canBearOff) {
+            bearOff();
+            isPossibleToMove = true;
+          } // checker can be bourne off
+
+          target = i + sign*dice[1];
+          if (target > 0 && target < 25) {
+            if (currentPlayerCanMoveTo(target)) {
+              triangles[i].possibleTargets.push(target);
+              isPossibleToMove = true;
+            } // valid move
+          } // if it's not the case of bearing off
+          else if (canBearOff) {
+            bearOff();
+            isPossibleToMove = true;
+          } // checker can be bourne off
+
+          if (triangles[i].possibleTargets.length > 0) {
+            target = i + sign*(dice[0] + dice[1]);
+            if (target > 0 && target < 25) {
+              if (currentPlayerCanMoveTo(target)
+                   && triangles[i].possibleTargets.length > 1) {
+                triangles[i].possibleTargets.push(target);
+                isPossibleToMove = true;
+              } // valid move
+            } // if it's not the case of bearing off
+            else if (canBearOff) {
+              bearOff();
+              isPossibleToMove = true;
+            } // checker can be bourne off
+          } // if the sum of dice is a valid move
+        } // if no dice already moved
+      } // if it's not a double
+
+        else {
+          noOfTargets = totalValue / dice[0];
+          for (var j = 0; j < noOfTargets; j++) {
+            target = i + sign*((j+1)*dice[0]);
+            if (target > 0 && target < 25) {
+              if (currentPlayerCanMoveTo(target)
+                   && triangles[i].possibleTargets.length > j)  {
+                triangles[i].possibleTargets.push(target);
+                isPossibleToMove = true;
+              } // valid move
+            } // if it's not the case of bearing off
+            else if (canBearOff) {
+              bearOff();
+              isPossibleToMove = true;
+            } // checker can be bourne off
+          } // for each possible target
+        } // if it's a double
+      } // if current player can move from this triangle
+    } // for each triangle
+
+  if (!isPossibleToMove) { totalValue = 0; }
+  if (totalValue == 0) {
+    currentPlayer = !currentPlayer;
+    hasRolled = false;
+    sign = currentPlayer ? -1 : 1;
+  }
+}
+
+function currentPlayerCanMoveFrom(tri) {
+  if (triangles[tri].checkersStack.length == 0) { return false; }
+
+  var lastCheckerOnTriangle =
+    triangles[tri].checkersStack[triangles[tri].checkersStack.length-1];
+
+  if (currentPlayer == 0) {
+    if (lastCheckerOnTriangle < 16) { return true; }
+    else { return false; }
+  }
+  else {
+    if (lastCheckerOnTriangle > 15) { return true; }
+    else { return false; }
+  }
+}
+
+function currentPlayerCanMoveTo(tri) {
+  var lastCheckerOnTarget =
+    triangles[tri].checkersStack[triangles[tri].checkersStack.length-1];
+
+  if (triangles[tri].checkersStack.length > 1) {
+    if (currentPlayer == 0) {
+      if (lastCheckerOnTarget > 15) { return false; }
+    }
+    else {
+      if (lastCheckerOnTarget < 16) { return false; }
+    }
+  }
+  return true;
+}
+
+function canCurrentPlayerBearOff() {
+  if (currentPlayer == 0) {
+    for (var i = 0; i < 15; i++) {
+      if (checkers[i].position < 19) {
+        return false;
+      }
+    }
+  }
+  else {
+    for (var i = 15; i < 30; i++) {
+      if (checkers[i].position > 6) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+function currentPlayerCanGrabFrom(t) {
+  if (currentPlayer == 0) {
+    return triangles[t].checkersStack[triangles[t].checkersStack.length-1] < 16
+      || triangles[t].checkersStack.length == 0;
+  }
+  else {
+    return triangles[t].checkersStack[triangles[t].checkersStack.length-1] > 15
+      || triangles[t].checkersStack.length == 0;
+  }
+}
+
+function checkerCanBeMovedTo(checker, tri) {
+  for (var i = 0; i < triangles[checkers[checker-1].position].possibleTargets.length; i++) {
+    if (tri == triangles[checkers[checker-1].position].possibleTargets[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
 
 function getHoveredTriangle() {
   // optimisation: only compute if mouse is over some triangle
